@@ -56,97 +56,22 @@ int indice = 0;
 bool estado1 = false;
 
 
-/* Funciones Auxiliares ---------------------------------------------- */
-void accSalida(const String& message) {
 
-  //Pasaje de Mensaje a Campos
-  char auxiliarString[100];
-  message.toCharArray(auxiliarString, 100); 
-  String campos[6];
-  
-  for(int aux=0 ; aux < 6 ; aux++)
-  {
-    if (aux == 0)
-      campos[aux] = strtok(auxiliarString, "/");
-    else
-      campos[aux] = strtok(NULL, "/");
-    //Serial.println(campos[aux]);
-  }
-  
-  //Salidas digitales
-  if (campos[0] == "dig")
-  {
-    //Salida 1
-    if (campos[1] == "1")
-    {
-      if (campos[2] == "ON")
-        digitalWrite(OUT1, LOW);
-      else
-        digitalWrite(OUT1, HIGH);
-    }
-    //Salida 2
-    if (campos[1] == "2")
-    {
-      if (campos[2] == "ON")
-        digitalWrite(OUT2, LOW);
-      else
-        digitalWrite(OUT2, HIGH);
-    }
-  }
-}
+/* Librerias del BME280  ---------------------------------------------- */
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_BME280.h>
+
+
+/* Variables del BME280  ---------------------------------------------- */
+Adafruit_BME280 bme; // use I2C interface
+Adafruit_Sensor *bme_temp = bme.getTemperatureSensor();
+Adafruit_Sensor *bme_pressure = bme.getPressureSensor();
+Adafruit_Sensor *bme_humidity = bme.getHumiditySensor();
 
 
 
 
-
-void onMessageReceived(const String& topic, const String& message) {
-  Serial.println(topic + ": " + message);
-}
-
-float promedio (float* vector, int cantidad)
-{
-  int i;
-  float suma=0;
-
-
-  for (i=0 ; i<cantidad ; i++)
-  {
-    suma += vector[i];
-    Serial.print(vector[i]);
-    Serial.print("\t");
-  }
-  indice = 0;
-
-  Serial.print("\nPromedio: ");
-  Serial.println(suma/cantidad);
-  
-  return (suma/cantidad);
-}
-
-void onConnectionEstablished() {
-  client.subscribe("RX/test", [] (const String &payload)
-  {
-    Serial.println(payload);
-  });
-
-  String acciones;
-
-
-  // Subscripcion a topicos de interes
-  char auxiliarString[100];
-  acciones = "accion/" + NDISP + "/#";
-  acciones.toCharArray(auxiliarString, 100); 
-  client.subscribe(auxiliarString, accSalida);
-
-  
-  
-  //Aviso que el dispositivo esta activo
-  String estado = "estado/" + NDISP + "/";
-  estado.toCharArray(auxiliarString, 100); 
-  client.publish(auxiliarString, "1");
-  Serial.println("Estoy vivo!!");
-  
-}
 
 
 
@@ -154,7 +79,7 @@ void onConnectionEstablished() {
 /* Setup ------------------------------------------------------- */
 void setup() {
   Serial.begin(115200);
-  pinMode(DHTPin, INPUT);   
+   
   
   Serial.println("Conectando ");
   Serial.println(ssid);
@@ -187,7 +112,9 @@ void setup() {
   client.enableLastWillMessage(auxiliarString, "0", true);
   client.enableMQTTPersistence();
   Serial.println("Last will message sent"); 
-  
+
+  //Inicio el BME
+  bmeInit();
 }
 
 
@@ -220,14 +147,9 @@ void loop()
     tregistroAnt = tregistroAct;
 
     //Mediciones
-    Temperature[indice] = bme_temp();         // Leemos la temperatura
-    Humidity[indice] = bme_hume();            // Leemos la humedad
-    Pressure[indice] = bme_pres();
-
-    Serial.println(Temperature[indice]);
-    Serial.println(Humidity[indice]);
-    Serial.println(Pressure[indice]);
-    Serial.println("-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-");
+    Temperature[indice] = bmeTemp();         // Leemos la temperatura
+    Humidity[indice] = bmeHumi();            // Leemos la humedad
+    Pressure[indice] = bmePres();
 
     indice++;
   }
