@@ -9,22 +9,22 @@ void onConnectionEstablished()
 
   String acciones;
 
-
   // Subscripcion a topicos de interes
   char auxiliarString[100];
   acciones = "accion/" + NDISP + "/#";
   acciones.toCharArray(auxiliarString, 100); 
   client.subscribe(auxiliarString, accSalida);
-
-  
+  acciones = "consulta/" + NDISP + "/#";
+  acciones.toCharArray(auxiliarString, 100); 
+  client.subscribe(auxiliarString, consultaEstado);
   
   //Aviso que el dispositivo esta activo
   String estado = "estado/" + NDISP + "/";
   estado.toCharArray(auxiliarString, 100); 
   client.publish(auxiliarString, String(estadoDisp));
   Serial.println("Estoy vivo!!");
-  
 }
+
 
 bool postLastWill()
 {
@@ -39,8 +39,9 @@ bool postLastWill()
   return(true);
 }
 
-void accSalida(const String& message) {
 
+void accSalida(const String& message) {
+  //Funcion que acciona las salidas en funcion de lo recivido por MQTT
   //Pasaje de Mensaje a Campos
   char auxiliarString[100];
   message.toCharArray(auxiliarString, 100); 
@@ -75,6 +76,19 @@ void accSalida(const String& message) {
         digitalWrite(OUT2, HIGH);
     }
   }
+}
+
+
+// Funcion para verificar el estado del dispositivo, 
+// si el dispositivo esta encendido confirma si esta apagado no responde
+void consultaEstado (const String& message)
+{
+  Serial.println("Consulta de estado");
+  
+  char auxiliarString[100];
+  String estado = "estado/" + NDISP + "/";
+  estado.toCharArray(auxiliarString, 100);
+  client.publish(auxiliarString, String(estadoDisp));
 }
 
 

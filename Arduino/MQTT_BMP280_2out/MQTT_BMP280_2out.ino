@@ -3,6 +3,7 @@
 
 
 
+
 /* Info WIFI -------------------------------------------------------- */
 const char* ssid = "Mora";
 const char* password = "moramora";
@@ -25,7 +26,7 @@ EspMQTTClient client(
 const int TON = 50;             //Tiempo que se mantiene encendido el LED
 const int TOFF = 5000;          //Tiempo que se mantiene apagado el LED
 const int TREPORTE = 300000;    //Tiempo entre envio de datos
-const int TSENSADO = 60000;     //Tiempo entre toma de datos
+const int TSENSADO = 30000;     //Tiempo entre toma de datos
 
 const int MAXVECTOR = TREPORTE/TSENSADO;       //Elementos de los vectores de datos
 
@@ -58,22 +59,20 @@ float estadoDisp = 0;
 
 
 
-/* Librerias del BME280  ---------------------------------------------- */
+/* Librerias del BMP280  ---------------------------------------------- */
 #include <Wire.h>
 #include <SPI.h>
-#include <Adafruit_BME280.h>
+#include "Adafruit_BMP280.h"
+
+Adafruit_BMP280 bmp;
 
 
-/* Variables del BME280  ---------------------------------------------- */
-Adafruit_BME280 bme; // use I2C interface
-Adafruit_Sensor *bme_temp = bme.getTemperatureSensor();
-Adafruit_Sensor *bme_pressure = bme.getPressureSensor();
-Adafruit_Sensor *bme_humidity = bme.getHumiditySensor();
+/* Libreria y definiciones del DHT11 ----------------------------------- */
+#include "DHT.h"
 
+#define DHTTYPE DHT11 // DHT 11
 
-
-
-
+DHT dht(DHTPin, DHTTYPE);     //Sensor de temperatura y humedad
 
 
 
@@ -82,7 +81,7 @@ void setup() {
   Serial.begin(115200);
 
   //Inicio el BME
-  if (bmeInit() == false)
+  if (bmp.begin() == false)
   {
     estadoDisp = 0.4;       //Si no puedo comunicarme con el sensor indico que no esta operativo
     Serial.println(F("Could not find a valid BME280 sensor, check wiring!"));
@@ -91,6 +90,12 @@ void setup() {
   {
     estadoDisp = 1;         //Comuncacion existosa con el sensor
     Serial.println(F("Sensor BME280 encontrado y funcionando"));
+
+    bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,   /* Modo de operación */
+                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
+                  Adafruit_BMP280::SAMPLING_X16,    /* Presion oversampling */
+                  Adafruit_BMP280::FILTER_X16,      /* Filtrado. */
+                  Adafruit_BMP280::STANDBY_MS_500); /* Tiempo Standby. */
   }
   
   Serial.println("Conectando ");
@@ -151,14 +156,16 @@ void loop()
     tregistroAnt = tregistroAct;
 
     //Mediciones
-    Temperature[indice] = bmeTemp();         // Leemos la temperatura
-    Humidity[indice] = bmeHumi();            // Leemos la humedad
-    Pressure[indice] = bmePres();
+    Temperature[indice] = bmp.readTemperature();        // Leemos la temperatura
+    Pressure[indice] = bmp.readPressure()/100;          // y presion del BMP
+
+    Humidity[indice] = dht.readHumidity();              // Leemos la humedad del DHT11
+    
 
     indice++;
   }
 
-  if(tsensorAct >= tsensorAnt + TREPORTE)
+  if(indice == round(TREPORTE/TSENSADO))
   {
     tsensorAnt = tsensorAct;
 

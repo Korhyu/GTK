@@ -15,14 +15,30 @@
 bool bmeInit(){
     if (!bme.begin()) {
     //Sensor no detectado    
-    Serial.println(F("Could not find a valid BME280 sensor, check wiring!"));
     return false;
   }
   else
   {
-    Serial.println(F("Sensor BME280 encontrado y funcionando"));
+    
     return true;    
   }
+}
+
+bool bmeMedicion (float* vector){
+
+  sensors_event_t temp_event;
+  sensors_event_t pressure_event;
+  sensors_event_t humidity_event;
+  
+  bme_temp->getEvent(&temp_event);
+  bme_pressure->getEvent(&pressure_event);
+  bme_humidity->getEvent(&humidity_event);
+  
+  vector[0] = temp_event.temperature;
+  vector[1] = pressure_event.pressure;
+  vector[2] = humidity_event.pressure;
+
+  return true;
 }
 
 
@@ -31,7 +47,7 @@ float bmeTemp (){
   sensors_event_t temp_event;
   bme_temp->getEvent(&temp_event);
   temp = temp_event.temperature;
-  //Serial.println(temp);
+  Serial.println(temp);
   return temp;
 }
 
@@ -40,7 +56,7 @@ float bmePres (){
   sensors_event_t pressure_event;
   bme_pressure->getEvent(&pressure_event);
   pres = pressure_event.pressure;
-  //Serial.println(pres);
+  Serial.println(pres);
   return pres;
 }
 
@@ -49,6 +65,6 @@ float bmeHumi (){
   sensors_event_t humidity_event;
   bme_humidity->getEvent(&humidity_event);
   hume = humidity_event.pressure;
-  //Serial.println(hume);
+  Serial.println(hume);
   return hume;
 }
